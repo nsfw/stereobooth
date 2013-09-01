@@ -19,6 +19,7 @@ cv2.namedWindow("preview")
 previewImageX=300
 previewImageY=200
 
+# This preview screen is intended for CALIBRATION
 def preview(images):
     # scale the images down for display, and show them side by side
     # display a reticle over the images to help with convergence
@@ -34,9 +35,6 @@ def preview(images):
         i+=1
     cv2.line(out, (0, previewImageY/2), (previewImageX*count, previewImageY/2),
              cv.RGB(200,200,200), 1)
-
-    # display 
-    # cv.ShowImage("preview", out)
     cv2.imshow('preview', out)
 
 
@@ -68,7 +66,7 @@ def save(images):
     print images
     x = 0
     for img in images:
-        cv.SaveImage("img-%s.png"%(x), img)
+        cv2.imwrite("img-%s.png"%(x), img)
         x+=1
 
 
@@ -92,9 +90,10 @@ def convert(name = "output.gif",delay=15):
 
 def do(fx):
     while cv.WaitKey(1) == -1:
-        repeat()
+        images = repeat()
         time.sleep(0.01)
-
+    save(images)
+    convert()
 
 if __name__ == "__main__":
     do(repeat)
