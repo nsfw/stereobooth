@@ -4,8 +4,9 @@
 
 import cv2.cv as cv
 import cv2
-import time
 import numpy as np
+import time
+import os
 
 from subprocess import call
 
@@ -14,10 +15,16 @@ cams = [cv2.VideoCapture(), cv2.VideoCapture()]
 cams[0].open(1)
 cams[1].open(2)
 
+# Do our cameras need to be rotated? 
+def transform(img):
+    out = np.fliplr(np.rot90(img,-1))
+    return out
+
 # A named window is required for imshow() to work correctly
-cv2.namedWindow("preview")
-previewImageX=300
-previewImageY=200
+cv2.namedWindow("preview", cv.CV_WINDOW_NORMAL)
+zoom=2
+previewImageX=200*zoom
+previewImageY=300*zoom
 
 # This preview screen is intended for CALIBRATION
 def preview(images):
@@ -37,16 +44,6 @@ def preview(images):
              cv.RGB(200,200,200), 1)
     cv2.imshow('preview', out)
 
-
-def configCam(cam):
-    pass
-    # cv.SetCaptureProperty(cam, cv.CV_CAP_PROP_FRAME_WIDTH, 800)
-    # cv.SetCaptureProperty(cam, cv.CV_CAP_PROP_FRAME_HEIGHT, 600)
-
-def config():
-    for cam in cams:
-        configCam(cam)
-
 def grabAll():
     # is there a way to go faster?
     for cam in cams:
@@ -54,46 +51,62 @@ def grabAll():
 
 def captureAll():
     grabAll()	# fast thing we can do
-    return [cams[0].retrieve()[1], cams[1].retrieve()[1]]
-
+    # this should be a map or something... 
+    images = [cams[0].retrieve()[1], cams[1].retrieve()[1]]
+    # transform images as nesc
+    return map(transform, images)
+    
 def repeat():
     images = captureAll()
     preview(images)
     return images
 
-def save(images):
+def save(images, dir=False):
     print "Saving"
-    print images
+    dirstr = ""
+    if(dir):
+        os.mkdir(dir)
+        dirstr = "%s/" % (dir)
     x = 0
     for img in images:
-        cv2.imwrite("img-%s.png"%(x), img)
+        cv2.imwrite("%simg-%s.png"%(dirstr, x), img)
         x+=1
 
-
-def convert(name = "output.gif",delay=15):
+def convert(name = "output.gif",delay=15, dir=False):
     # use convert from imagemagick to make an animated gif
     # convert -delay 20 -loop 0 img-*.png output.gif
     # full res:
     # call(["convert", "-delay", str(delay), "-loop", "0", "img-*.png", name])
     # Posterize
+    cwd = os.getcwd()
+    if(dir):
+        os.chdir(dir)
     call(["convert", "-delay", str(delay), "-loop", "0",
-          "-posterize","8",
+          "-posterize","16",
           "-resize","50%",
           "img-*.png", name])
+    if(dir):
+        os.chdir(cwd)
 
-# def do(fx):
-#     while cv.WaitKey(1000) == -1:
-#         images=captureAll()
-#         time.sleep(0.01)
-#     save(images)
-#     convert()
+def click():
+    os.system("say click")
 
-def do(fx):
-    while cv.WaitKey(1) == -1:
+def bye():
+    os.system("say bye")
+
+def mainloop():
+    # just wait for a key press, ESC, escapes
+    k = -1
+    while k!=27:	
         images = repeat()
-        time.sleep(0.01)
-    save(images)
-    convert()
+        if k!=-1:
+            images = repeat()
+            click()
+            dir = str(int(time.time()))	# number of seconds since epoch
+            save(images,dir)
+            convert(dir=dir)
+        k = cv2.waitKey(1)	# -1 if nothing pressed
+    bye()
 
 if __name__ == "__main__":
-    do(repeat)
+    mainloop()
