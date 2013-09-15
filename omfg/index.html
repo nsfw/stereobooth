@@ -1,0 +1,36 @@
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+<script src="omfg.js"></script>
+<body id="body">
+
+<center><h1>Photobooth Live</h1></center>
+
+<div id="imagesdiv"></div>
+
+<script id="images" type="text/x-jquery-tmpl">
+ <center>
+  {{each files}}
+    <img src="../photos/${$value}" />
+    <br/>
+    &nbsp;
+    <br/>
+  {{/each}}
+ </center>
+</script>
+
+<script>
+var pics = []
+function showPics(err,data){
+	if(pics != data){
+		pics = data;
+		$("#images").tmpl({files:data}).appendTo("#imagesdiv");
+	}
+}
+
+function fetchAndRenderPhotos(){
+	apacheIndexList("/photos/?C=M;O=D", showPics);
+}
+
+$(document).ready(fetchAndRenderPhotos);
+</script>
+
