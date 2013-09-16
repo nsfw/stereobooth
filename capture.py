@@ -94,19 +94,44 @@ def click():
 def bye():
     os.system("say bye")
 
+button=False
+
 def mainloop():
+    global button
     # just wait for a key press, ESC, escapes
     k = -1
     while k!=27:	
         images = repeat()
-        if k!=-1:
+        if k!=-1 or button:
             images = repeat()
             click()
             dir = str(int(time.time()))	# number of seconds since epoch
             save(images,dir)
             convert(dir=dir)
+            button = False
         k = cv2.waitKey(1)	# -1 if nothing pressed
     bye()
+
+###############################################################################
+## make a button we can hit from the web to take a picture
+###############################################################################
+
+from wsgiref.simple_server import make_server
+
+# just doing a GET on this port will "press" the button
+def simple_app(environ, start_response):
+    global button
+    oldbutton = button
+    button = True
+    status = '200 OK'
+    headers = [('Content-type', 'text/plain')]
+    start_response(status, headers)
+    return "button was %s now %s" % (oldbutton, button)
+
+httpd = make_server('', 8000, simple_app)
+print "Do a get on :8000 to take a picture"
+import thread
+thread.start_new_thread(httpd.serve_forever, ())
 
 if __name__ == "__main__":
     mainloop()
