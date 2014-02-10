@@ -5,6 +5,7 @@
 import cv2.cv as cv
 import cv2
 import numpy as np
+import base62
 import time
 import os
 
@@ -125,7 +126,8 @@ def mainloop():
             click()
             name = saveAs
             if(not name):
-                name = str(int(time.time()))	# number of seconds since epoch
+                # generate a short code based on time
+                name = str(base62.encode(int(time.time())-1392050000))
             save(images,name)
             convert(name+".gif", dir=name)
             cp(images,name)                     # TRY and copy the file to rvip.co
