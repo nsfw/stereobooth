@@ -66,6 +66,7 @@ def save(images, dir=False):
     print "Saving"
     dirstr = ""
     if(dir):
+        dir = "images/%s" % (dir)
         os.mkdir(dir)
         dirstr = "%s/" % (dir)
     x = 0
@@ -74,9 +75,9 @@ def save(images, dir=False):
         x+=1
 
 #
-# use scp to copy the resulting gif to rvip.co
-#
-# scp -i ~/.ssh/scottaws.pem ./cat.gif ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:/home/ubuntu/sites/rvip/photos
+# use scp to copy the resulting gif to rvip.co, for example:
+# scp -i ~/.ssh/scottaws.pem ./cat.gif
+#     ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:/home/ubuntu/sites/rvip/photos
 #
 def cp(dir=False):
     print "Copying %s/output.gif to rvip.co" % (dir)
