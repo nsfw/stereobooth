@@ -1,0 +1,37 @@
+<html>
+<!-- GUI for STEREO-O-O-O BOOTH-TH-TH-TH -->
+<head>
+  <title>STEREOBOOTH</title>
+  <script src="jquery.min.js"></script>
+</head>
+<body>
+  <div id="prompt" onClick="playCountDown()">
+    TOUCH TO TAKE A FUNKING PICTURE!
+  </div>
+  <div id="countdownHolder" >
+    <div id="click" style="display:none">
+      <h1>CLICK!</h1>
+    </div>
+    <video id="countdown" width="100%" preload="auto" style="display:none;">
+      <source src="321.mov" type="video/mp4">
+      Uh oh... this browser does not support the video tag. This is not going to work.
+    </video>
+  </div>
+  <script>
+   function playCountDown(){
+     // hide button, show and play countdown
+     $("#prompt").hide()
+     $("#countdown").show();
+     $("#countdown").get(0).play();
+   }
+
+   $("#countdown").bind("ended", function() {
+     $("#click").show()
+     // hit controller to take picture
+     $("#countdown").hide();
+     $("#countdown").get(0).currentTime=0;
+     $("#prompt").show()
+   });   
+  </script>
+</body>
+</html>
