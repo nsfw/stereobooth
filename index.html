@@ -1,0 +1,111 @@
+<html xmlns:fb="http://ogp.me/ns/fb#">
+
+<!--
+Return a list of the NN most recent photobooth images, or if a
+specific image is passed in display it alone.
+-->
+
+  <head>
+    <!-- use the RVIP FB thumbnail instead of nothing -->
+    <meta property="og:image" content="http://rvip.co/images/rvip_thumb1.jpg"/>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+<script src="omfg.js"></script>
+
+<body id="body">
+<img src="img/RVIP_Stereobooth_White.png" id="logo">
+<div id="imagesdiv"></div>
+
+<!-- facebook sdk support for like button -->
+<div id="fb-root"></div>
+<script>
+  // Load the SDK asynchronously
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=210007239161110";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+
+</script>
+<!-- ------------------------------------------------------------------------------- -->
+<style>
+.photo {width:75%;}
+.photobox {margin-top:2em; margin-bottom:3em;}
+</style>
+
+<script id="images" type="text/x-jquery-tmpl">
+  {{each files}}
+    <div class="photobox">
+	  <center>
+		<a href="${imageUrl($value)}"><img src="../photos/${$value}" class="photo" /></a>
+		<br/>
+		<div class="fb-like" data-href="${imageUrl($value)}" data-width="100" data-colorscheme="dark" data-show-faces="false" data-send="true">
+		</div>
+	</center>
+    </div>
+  {{/each}}
+</script>
+
+<script>
+var pics = []
+var fname = null
+var dbg = null
+function showPics(err,data){
+   // will look for fname.gif if set (could use additional image types)
+   console.log("fname="+fname);
+   dbg = data
+   if(fname!=null && $.makeArray(data).indexOf(fname+".gif") != -1){
+
+     // just display the one!
+     $("#images").tmpl({files:[fname+".gif"]}).appendTo("#imagesdiv");
+
+   } else {
+
+     // Either nothing specified, or image doesn't exist
+     // so display them all - but only if they've changed - idempotent!
+
+     if(pics != data){
+	   pics = data;
+	   $("#images").tmpl({files:data}).appendTo("#imagesdiv");
+     }
+
+     // set a refresh timer looking for new files
+   }
+}
+
+function imageUrl(x){
+    return "http://rvip.co/omfg/?"+x.replace(".gif","");
+}
+
+function shareOnFB(fname){
+   // per: https://developers.facebook.com/docs/plugins/share/
+   return 'https://www.facebook.com/sharer/sharer.php?u='+
+                   encodeURIComponent(encodeURIComponent(imageUrl(fname)));
+}
+
+
+
+function fetchAndRenderPhotos(fname){
+	apacheIndexList("/photos/?C=M;O=D", showPics);
+}
+
+function main(){
+   // are they looking for a specific file?
+   var args = RegExp('[\\?&]([^?&#]*)').exec(window.location.href);
+   if(args && args.length==2){
+     fname = args[1]
+   }
+
+   apacheIndexList("/photos/?C=M;O=D", showPics);
+}
+
+$(document).ready(main)
+</script>
+
+</body>
+</html>
