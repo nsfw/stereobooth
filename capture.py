@@ -72,7 +72,23 @@ def save(images, dir=False):
         cv2.imwrite("%simg-%s.png"%(dirstr, x), img)
         x+=1
 
-def convert(name = "output.gif",delay=15, dir=False):
+#
+# use scp to copy the resulting gif to rvip.co
+#
+# scp -i ~/.ssh/scottaws.pem ./cat.gif ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:/home/ubuntu/sites/rvip/photos
+#
+def cp(dir=False):
+    print "Copying %s/output.gif to rvip.co" % (dir)
+    if(dir):
+        src = "%s/output.gif" % (dir)
+        dst = "/home/ubuntu/sites/rvip/photos/%s.gif" % (dir)
+        result = call(["scp","-i", "rvip.co.pem",
+                       src,
+                       "ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:%s" % (dst)])
+        return result==0
+    return False
+
+def convert(name,delay=15, dir=False):
     # use convert from imagemagick to make an animated gif
     # convert -delay 20 -loop 0 img-*.png output.gif
     # full res:
@@ -88,25 +104,60 @@ def convert(name = "output.gif",delay=15, dir=False):
     if(dir):
         os.chdir(cwd)
 
+
 def click():
     os.system("say click")
 
 def bye():
     os.system("say bye")
 
+button=False
+saveAs=False
+
 def mainloop():
+    global button
     # just wait for a key press, ESC, escapes
     k = -1
     while k!=27:	
         images = repeat()
-        if k!=-1:
+        if k!=-1 or button:
             images = repeat()
             click()
-            dir = str(int(time.time()))	# number of seconds since epoch
-            save(images,dir)
-            convert(dir=dir)
+            name = saveAs
+            if(not name):
+                name = str(int(time.time()))	# number of seconds since epoch
+            save(images,name)
+            convert(name+".gif", dir=name)
+            cp(images,name)                     # TRY and copy the file to rvip.co
+            button = False
         k = cv2.waitKey(1)	# -1 if nothing pressed
     bye()
+
+###############################################################################
+## make a button we can hit from the web to take a picture
+###############################################################################
+
+from bottle import route, run, template, static_file
+
+@route('/click')
+@route('/click/<filename>')
+def index(filename=False):
+    global button, saveAs
+    oldbutton = button
+    saveAs = filename
+    button = True
+    return "button was %s now %s" % (oldbutton, button)
+
+@route('/static/<filename>')
+def server_static (filename):
+    """ serve up static files and assets """
+    return static_file(filename, root="./static")
+
+import thread
+thread.start_new_thread(lambda: run(host='localhost', port=8000), ())
+
+
+###############################################################################
 
 if __name__ == "__main__":
     mainloop()
