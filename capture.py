@@ -79,14 +79,19 @@ def save(images, dir=False):
 # scp -i ~/.ssh/scottaws.pem ./cat.gif
 #     ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:/home/ubuntu/sites/rvip/photos
 #
+# If this fails - which it may due to network suckery, we rely on a seperate rsync process
+# to move the images over
+#
 def cp(dir=False):
     print "Copying %s/output.gif to rvip.co" % (dir)
     if(dir):
-        src = "%s/output.gif" % (dir)
-        dst = "/home/ubuntu/sites/rvip/photos/%s.gif" % (dir)
+        src = "images/%s/output.gif" % (dir)
+        remotedst = "/home/ubuntu/sites/rvip/photos/%s.gif" % (dir)
+        localdst = "images/photos/%s.gif" % (dir)
+        call(["cp", src, localdst])
         result = call(["scp","-i", "rvip.co.pem",
                        src,
-                       "ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:%s" % (dst)])
+                       "ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:%s" % (remotedst)])
         return result==0
     return False
 
