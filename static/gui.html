@@ -17,6 +17,9 @@
       Uh oh... this browser does not support the video tag. This is not going to work.
     </video>
   </div>
+  <div id="hidden">
+    
+  </div>
   <script>
    function playCountDown(){
      // hide button, show and play countdown
@@ -26,8 +29,9 @@
    }
 
    $("#countdown").bind("ended", function() {
-     $("#click").show()
+     $("#click").show();
      // hit controller to take picture
+     $("#hidden").load("/click");
      $("#countdown").hide();
      $("#countdown").get(0).currentTime=0;
      $("#prompt").show()
