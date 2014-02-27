@@ -85,7 +85,7 @@ def save(images, dir=False):
 def cp(dir=False):
     print "Copying %s/output.gif to rvip.co" % (dir)
     if(dir):
-        src = "images/%s/output.gif" % (dir)
+        src = "images/%s/%s.gif" % (dir,dir)
         remotedst = "/home/ubuntu/sites/rvip/photos/%s.gif" % (dir)
         localdst = "images/photos/%s.gif" % (dir)
         call(["cp", src, localdst])
@@ -102,6 +102,7 @@ def convert(name,delay=15, dir=False):
     # call(["convert", "-delay", str(delay), "-loop", "0", "img-*.png", name])
     # Posterize
     cwd = os.getcwd()
+    print "CHDIR = "+dir
     if(dir):
         os.chdir(dir)
     call(["convert", "-delay", str(delay), "-loop", "0",
@@ -135,8 +136,8 @@ def mainloop():
                 # generate a short code based on time
                 name = str(base62.encode(int(time.time())-1392050000))
             save(images,name)
-            convert(name+".gif", dir=name)
-            cp(images,name)                     # TRY and copy the file to rvip.co
+            convert(name+".gif", dir="images/%s"%(name) )
+            cp(name)                     # TRY and copy the file to rvip.co
             button = False
         k = cv2.waitKey(1)	# -1 if nothing pressed
     bye()
