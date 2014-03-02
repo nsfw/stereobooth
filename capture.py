@@ -18,7 +18,7 @@ cams[1].open(2)
 
 # Do our cameras need to be rotated? 
 def transform(img):
-    out = np.fliplr(np.rot90(img,-1))
+    out = np.fliplr(np.rot90(img,1))
     return out
 
 # A named window is required for imshow() to work correctly
@@ -28,7 +28,7 @@ previewImageX=200*zoom
 previewImageY=300*zoom
 
 # This preview screen is intended for CALIBRATION
-def preview(images):
+def previewSideBySide(images):
     # scale the images down for display, and show them side by side
     # display a reticle over the images to help with convergence
     count = len(images)
@@ -45,6 +45,28 @@ def preview(images):
              cv.RGB(200,200,200), 1)
     cv2.imshow('preview', out)
 
+pframe = 0
+
+def previewAlternate(images):
+    # scale the images down for display, and show them side by side
+    # display a reticle over the images to help with convergence
+    global pframe
+    count = len(images)
+    out = np.zeros((previewImageY, previewImageX*count, 3), dtype=np.uint8)
+    i = 0
+    img = images[pframe&1]
+    pframe+=1
+    scaled = cv2.resize(img, (previewImageX, previewImageY))
+    x = (previewImageX*i)
+    out[0:previewImageY,x:x+previewImageX]=scaled
+    cx = x + previewImageX/2
+    cv2.line(out, (cx, 0), (cx, previewImageY), cv.RGB(200,200,200), 1)
+
+    cv2.line(out, (0, previewImageY/2), (previewImageX*count, previewImageY/2),
+             cv.RGB(200,200,200), 1)
+    cv2.imshow('preview', out)
+
+
 def grabAll():
     # is there a way to go faster?
     for cam in cams:
@@ -59,7 +81,8 @@ def captureAll():
     
 def repeat():
     images = captureAll()
-    preview(images)
+    # previewSideBySide(images)
+    previewAlternate(images)
     return images
 
 def save(images, dir=False):
@@ -96,8 +119,12 @@ def cp(dir=False):
     return False
 
 def convert(name,delay=15, dir=False):
-    # use convert from imagemagick to make an animated gif
-    # convert -delay 20 -loop 0 img-*.png output.gif
+    # Use:
+    #  align_image_stack (hugin) to align the stereo pair
+    #  use convert (imagemagick)  to make an animated gif
+    # 
+    # align_image_stack -A -C -a eye img-*.png
+    # convert -delay 20 -loop 0 eye*.tif output.gif
     # full res:
     # call(["convert", "-delay", str(delay), "-loop", "0", "img-*.png", name])
     # Posterize
@@ -105,10 +132,11 @@ def convert(name,delay=15, dir=False):
     print "CHDIR = "+dir
     if(dir):
         os.chdir(dir)
+    call(["../../Hugin/HuginTools/align_image_stack", "-A", "-C", "-a", "eye-", "img-0.png","img-1.png"])
     call(["convert", "-delay", str(delay), "-loop", "0",
-          "-posterize","16",
+          "-posterize","64",
           "-resize","50%",
-          "img-*.png", name])
+          "eye-*.tif", name])
     if(dir):
         os.chdir(cwd)
 
