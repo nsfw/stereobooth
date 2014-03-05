@@ -11,10 +11,25 @@ import os
 
 from subprocess import call
 
+# Configuration
+stereo = True  # set to False for MONO operation
+cam1 = 1       # camera enumartions
+cam2 = 2
+preview = "alternate" # or "sidebyside" or False (to disable)
+
+# un-comment to debug on iSight
+stereo = False
+cam1 = 0
+
 # open the cameras
-cams = [cv2.VideoCapture(), cv2.VideoCapture()] 
-cams[0].open(1)
-cams[1].open(2)
+cams = []
+if stereo:
+    cams = [cv2.VideoCapture(), cv2.VideoCapture()] 
+    cams[0].open(cam1)
+    cams[1].open(cam2)
+else:
+    cams = [cv2.VideoCapture()]
+    cams[0].open(cam1)
 
 # Do our cameras need to be rotated? 
 def transform(img):
@@ -22,7 +37,7 @@ def transform(img):
     return out
 
 # A named window is required for imshow() to work correctly
-cv2.namedWindow("preview", cv.CV_WINDOW_NORMAL)
+cv2.namedWindow("RVIP Stereobooth", cv.CV_WINDOW_NORMAL)
 zoom=2
 previewImageX=200*zoom
 previewImageY=300*zoom
@@ -48,14 +63,18 @@ def previewSideBySide(images):
 pframe = 0
 
 def previewAlternate(images):
-    # scale the images down for display, and show them side by side
-    # display a reticle over the images to help with convergence
+    # alternate left and right photos
     global pframe
     count = len(images)
-    out = np.zeros((previewImageY, previewImageX*count, 3), dtype=np.uint8)
+    out = np.zeros((previewImageY, previewImageX, 3), dtype=np.uint8)
     i = 0
-    img = images[pframe&1]
-    pframe+=1
+
+    if stereo:
+        img = images[pframe&1]
+        pframe+=1
+    else:
+        img = images[0]
+
     scaled = cv2.resize(img, (previewImageX, previewImageY))
     x = (previewImageX*i)
     out[0:previewImageY,x:x+previewImageX]=scaled
@@ -66,7 +85,6 @@ def previewAlternate(images):
              cv.RGB(200,200,200), 1)
     cv2.imshow('preview', out)
 
-
 def grabAll():
     # is there a way to go faster?
     for cam in cams:
@@ -75,14 +93,19 @@ def grabAll():
 def captureAll():
     grabAll()	# fast thing we can do
     # this should be a map or something... 
-    images = [cams[0].retrieve()[1], cams[1].retrieve()[1]]
+    if stereo:
+        images = [cams[0].retrieve()[1], cams[1].retrieve()[1]]
+    else:
+        images = [cams[0].retrieve()[1]]
     # transform images as nesc
     return map(transform, images)
     
 def repeat():
     images = captureAll()
-    # previewSideBySide(images)
-    previewAlternate(images)
+    if preview == "sideBySide":
+        previewSideBySide(images)
+    elif preview == "alternate":
+        previewAlternate(images)
     return images
 
 def save(images, dir=False):
@@ -140,6 +163,17 @@ def convert(name,delay=15, dir=False):
     if(dir):
         os.chdir(cwd)
 
+def convert_mono(name,delay=15, dir=False):
+    # Just turn our png into a .gif
+    cwd = os.getcwd()
+    print "CHDIR = "+dir
+    if(dir):
+        os.chdir(dir)
+    # could put in some fun RVIP logo... but for now just convert to .gif
+    call(["convert","-resize","50%", "img-0.png", name])
+    if(dir):
+        os.chdir(cwd)
+
 
 def click():
     os.system("say click")
@@ -164,7 +198,10 @@ def mainloop():
                 # generate a short code based on time
                 name = str(base62.encode(int(time.time())-1392050000))
             save(images,name)
-            convert(name+".gif", dir="images/%s"%(name) )
+            if stereo:
+                convert(name+".gif", dir="images/%s"%(name) )
+            else:
+                convert_mono(name+".gif", dir="images/%s"%(name) )
             cp(name)                     # TRY and copy the file to rvip.co
             button = False
         k = cv2.waitKey(1)	# -1 if nothing pressed
@@ -195,6 +232,19 @@ thread.start_new_thread(lambda: run(host='localhost', port=8000), ())
 
 
 ###############################################################################
+# listen for OSC triggers or for web-page
+###############################################################################
+
+import CCore
+panel = CCore.CCore(pubsub="osc-udp:")
+
+def panelHandler(msg):
+    global button, saveAs
+    # dispatch messages
+    if msg.path == "/take-picture":
+        button = True
+
+panel.subscribe("*", panelHandler)
 
 if __name__ == "__main__":
     mainloop()
