@@ -12,14 +12,14 @@ import os
 from subprocess import call
 
 # Configuration
-stereo = True  # set to False for MONO operation
+stereo = True # True  # set to False for MONO operation
 cam1 = 1       # camera enumartions
 cam2 = 2
 preview = "alternate" # or "sidebyside" or False (to disable)
 
 # un-comment to debug on iSight
-stereo = False
-cam1 = 0
+# stereo = False
+# cam1 = 0
 
 # open the cameras
 cams = []
@@ -33,7 +33,7 @@ else:
 
 # Do our cameras need to be rotated? 
 def transform(img):
-    out = np.fliplr(np.rot90(img,1))
+    out = np.fliplr(np.rot90(img,-1))
     return out
 
 # A named window is required for imshow() to work correctly
@@ -190,7 +190,7 @@ def mainloop():
     k = -1
     while k!=27:	
         images = repeat()
-        if k!=-1 or button:
+        if k==32 or button:
             images = repeat()
             click()
             name = saveAs
