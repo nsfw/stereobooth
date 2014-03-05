@@ -12,7 +12,7 @@ import os
 from subprocess import call
 
 # Configuration
-stereo = True # True  # set to False for MONO operation
+stereo = False # True  # set to False for MONO operation
 cam1 = 1       # camera enumartions
 cam2 = 2
 preview = "alternate" # or "sidebyside" or False (to disable)
