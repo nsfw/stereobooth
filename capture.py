@@ -133,20 +133,22 @@ def cp(dir=False):
     print "Copying %s/output.gif to rvip.co" % (dir)
     if(dir):
         src = "images/%s/%s.gif" % (dir,dir)
-        remotedst = "/home/ubuntu/sites/rvip/photos/%s.gif" % (dir)
+        thumbSrc = "images/%s/thumb_%s.gif" % (dir,dir)
+        remotedst = "/home/ubuntu/sites/rvip/photos/"
         localdst = "images/photos/%s.gif" % (dir)
         call(["cp", src, localdst])
         result = call(["scp","-i", "rvip.co.pem",
-                       src,
+                       src, thumbSrc,
                        "ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:%s" % (remotedst)])
         return result==0
     return False
 
-def scaleAndCrop(inFile, outFile):
-    # call(["convert", inFile, "-resize", "950", "tmpScale.png"])
-    # call(["convert", "tmpScale.png", "-crop", "900x900+0+0","-gravity","center", outFile])
+def scaleAndCrop(inFile, outFile, thumbFile = False):
     call(["convert",inFile, "-resize", "950x950^", "-gravity", "Center",
          "-crop", "900x900+0+0","+repage", outFile])
+    if thumbFile:
+        call(["convert",inFile, "-resize", "425x425^", "-gravity", "Center",
+              "-crop", "400x400+0+0","+repage", thumbFile])
 
 def frame(inFile, outFile):
     # slap the RVIP frame on the file
@@ -164,6 +166,7 @@ def convert(name,delay=15, dir=False):
     # call(["convert", "-delay", str(delay), "-loop", "0", "img-*.png", name])
     # Posterize
     cwd = os.getcwd()
+    thumbName = "thumb_%s" % (name)
     print "CHDIR = "+dir
     if(dir):
         os.chdir(dir)
@@ -171,11 +174,16 @@ def convert(name,delay=15, dir=False):
     # scale, crop and frame
     for x in [0, 1]:
         f = "tmpeye-000%s.tif" % (x)
-        scaleAndCrop(f,"tmp.png")
+        scaleAndCrop(f,"tmp.png", "tmpThumb-%s.png" % (x))
         frame("tmp.png", "tmpeye-%s.png" % (x))
+    # gif-ize
     call(["convert", "-delay", str(delay), "-loop", "0",
           "-posterize","64",
           "tmpeye-0.png", "tmpeye-1.png", name])
+    # and a thumbnail
+    call(["convert", "-delay", str(delay), "-loop", "0",
+          "-posterize","64",
+          "tmpThumb-0.png", "tmpThumb-1.png", thumbName])
     # cleanup!
     call(["rm"]+glob.glob("tmp*"))
     if(dir):
@@ -226,6 +234,14 @@ def mainloop():
             button = False
         k = cv2.waitKey(1)	# -1 if nothing pressed
     bye()
+
+def convertAndCopy(name):
+    # good for re-processing images
+    if stereo:
+        convert(name+".gif", dir="images/%s"%(name) )
+    else:
+        convert_mono(name+".gif", dir="images/%s"%(name) )
+    cp(name)
 
 ###############################################################################
 ## make a button we can hit from the web to take a picture
