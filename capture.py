@@ -8,6 +8,7 @@ import numpy as np
 import base62
 import time
 import os
+import glob
 
 from subprocess import call
 
@@ -18,7 +19,7 @@ cam2 = 2
 preview = "alternate" # or "sidebyside" or False (to disable)
 
 # un-comment to debug on iSight
-# stereo = False
+stereo = False
 # cam1 = 0
 
 # open the cameras
@@ -141,12 +142,23 @@ def cp(dir=False):
         return result==0
     return False
 
+def scaleAndCrop(inFile, outFile):
+    # call(["convert", inFile, "-resize", "950", "tmpScale.png"])
+    # call(["convert", "tmpScale.png", "-crop", "900x900+0+0","-gravity","center", outFile])
+    call(["convert",inFile, "-resize", "950x950^", "-gravity", "Center",
+         "-crop", "900x900+0+0","+repage", outFile])
+
+def frame(inFile, outFile):
+    # slap the RVIP frame on the file
+    call(["composite","../frame900.png",inFile, outFile])
+
 def convert(name,delay=15, dir=False):
     # Use:
     #  align_image_stack (hugin) to align the stereo pair
     #  use convert (imagemagick)  to make an animated gif
     # 
     # align_image_stack -A -C -a eye img-*.png
+    # normalize size and crop center
     # convert -delay 20 -loop 0 eye*.tif output.gif
     # full res:
     # call(["convert", "-delay", str(delay), "-loop", "0", "img-*.png", name])
@@ -155,25 +167,33 @@ def convert(name,delay=15, dir=False):
     print "CHDIR = "+dir
     if(dir):
         os.chdir(dir)
-    call(["../../Hugin/HuginTools/align_image_stack", "-A", "-C", "-a", "eye-", "img-0.png","img-1.png"])
+    call(["../../Hugin/HuginTools/align_image_stack", "-A", "-C", "-a", "tmpeye-", "img-0.png","img-1.png"])
+    # scale, crop and frame
+    for x in [0, 1]:
+        f = "tmpeye-000%s.tif" % (x)
+        scaleAndCrop(f,"tmp.png")
+        frame("tmp.png", "tmpeye-%s.png" % (x))
     call(["convert", "-delay", str(delay), "-loop", "0",
           "-posterize","64",
-          "-resize","50%",
-          "eye-*.tif", name])
+          "tmpeye-0.png", "tmpeye-1.png", name])
+    # cleanup!
+    call(["rm"]+glob.glob("tmp*"))
     if(dir):
         os.chdir(cwd)
 
-def convert_mono(name,delay=15, dir=False):
+def convert_mono(name,dir=False):
     # Just turn our png into a .gif
     cwd = os.getcwd()
     print "CHDIR = "+dir
     if(dir):
         os.chdir(dir)
     # could put in some fun RVIP logo... but for now just convert to .gif
-    call(["convert","-resize","50%", "img-0.png", name])
+    scaleAndCrop("img-0.png","tmp.png")
+    frame("tmp.png", name)
+    # cleanup!
+    call(["rm"]+glob.glob("tmp*"))
     if(dir):
         os.chdir(cwd)
-
 
 def click():
     os.system("say click")
