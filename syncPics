@@ -1,4 +1,4 @@
 #!/bin/bash
 # Sync the local picture directory with rvip.co
 # Should be run in a cron job...
-rsync -av -e 'ssh -i rvip.co.pem' images/photos ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:/home/ubuntu/sites/rvip
+rsync -av -t -e 'ssh -i rvip.co.pem' images/photos ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:/home/ubuntu/sites/rvip

@@ -13,13 +13,13 @@ import glob
 from subprocess import call
 
 # Configuration
-stereo = False # True  # set to False for MONO operation
+stereo = True # True  # set to False for MONO operation
 cam1 = 1       # camera enumartions
 cam2 = 2
 preview = "alternate" # or "sidebyside" or False (to disable)
 
 # un-comment to debug on iSight
-stereo = False
+# stereo = False
 # cam1 = 0
 
 # open the cameras
@@ -135,8 +135,9 @@ def cp(dir=False):
         src = "images/%s/%s.gif" % (dir,dir)
         thumbSrc = "images/%s/thumb_%s.gif" % (dir,dir)
         remotedst = "/home/ubuntu/sites/rvip/photos/"
-        localdst = "images/photos/%s.gif" % (dir)
+        localdst = "images/photos/" % (dir)
         call(["cp", src, localdst])
+        call(["cp", thumbSrc, localdst])
         result = call(["scp","-i", "rvip.co.pem",
                        src, thumbSrc,
                        "ubuntu@ec2-107-22-117-177.compute-1.amazonaws.com:%s" % (remotedst)])
@@ -233,6 +234,7 @@ def mainloop():
             cp(name)                     # TRY and copy the file to rvip.co
             button = False
         k = cv2.waitKey(1)	# -1 if nothing pressed
+        time.sleep(0.1)
     bye()
 
 def convertAndCopy(name):
